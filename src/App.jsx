@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
 const API_URL = 'http://localhost:3000/titles'
@@ -11,6 +11,8 @@ function App() {
     'enable_subtitles': true,
     'number_of_titles': '1'
   });
+  const [result, setResult] = useState(null)
+  const myInterval = useRef(null)
 
   const handleChange= (e) => {
     const {value} = e.target;
@@ -33,8 +35,33 @@ function App() {
       setJobId(parsedResponse.result_id)
       console.log(parsedResponse)
     }
-    setLoading(false)
   }
+
+  useEffect(()=>{
+    if(jobId != null) {
+      if (!myInterval.current) {
+        try {
+          myInterval.current = setInterval(async ()=>{
+            console.log(`API_URL${'/result/'}${jobId}`)
+            const response = await fetch(`${API_URL}/result/${jobId}`)
+            if (response.ok) {
+              const parsedResponse = await response.json();
+              setResult(parsedResponse)
+              clearInterval(myInterval.current)
+              setLoading(false)
+            }
+          }, 5000)
+        } catch (error) {
+          console.log(error)
+          if (myInterval.current) {
+            clearInterval(myInterval.current)
+            setLoading(false)
+          }
+        }
+        
+      }
+    }
+  }, [jobId])
 
   return (
     <>
@@ -44,7 +71,7 @@ function App() {
         <label htmlFor="enable_subtitles">Crear un subtítulo para cada título</label>
         <input type="checkbox" name="enable_subtitles" id="enable_subtitles" onChange={handleChange} checked={formValues.enable_subtitles}/>
         <select name="number_of_titles" id="number_of_titles" style={{width: '100%'}} value={formValues.number_of_titles} onChange={handleChange}>
-          <option value={Number(1)}>1</option>
+          <option value={1}>1</option>
           <option value={2}>2</option>
           <option value={3}>3</option>
         </select>
@@ -52,6 +79,9 @@ function App() {
       </form>
       {loading && 'Cargando...'}
       {jobId && <code>jobId: {jobId}</code>}
+      {result && <code>
+        {JSON.stringify(result)}
+      </code>}
       
     </>
   )
