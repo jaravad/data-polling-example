@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import './App.css'
 
+const API_URL = 'http://localhost:3000/titles'
 
 function App() {
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [jobId, setJobId] = useState(null)
   const [formValues, setFormValues] = useState({
-    text: '',
+    text: 'El Metropolitan Museum de Nueva York (MET) inauguró este jueves 7 de septiembre la exposición “Art for the Millions: American Culture and Politics in the 1930s”, que muestra los diferentes ángulos artísticos en EE. UU. en la década de los 30 del siglo XX. La muestra recoge portadas de revistas, tanto sindicales como de moda, pósters con propaganda de las políticas sociales del Gobierno, litografías de artistas desconocidos, óleos de algunos más consagrados como Georgia O’Keeffe y hasta objetos como algunos de los primeros electrodomésticos aparecidos en aquella época.',
     'enable_subtitles': true,
     'number_of_titles': '1'
   });
@@ -15,9 +17,23 @@ function App() {
     setFormValues(prev => ({...prev, [e.target.name]: value}))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log(formValues)
+    const data = {...formValues, number_of_titles: Number(formValues.number_of_titles)}
+    setLoading(true)
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    if(response.ok) {
+      const parsedResponse = await response.json();
+      setJobId(parsedResponse.result_id)
+      console.log(parsedResponse)
+    }
+    setLoading(false)
   }
 
   return (
@@ -32,10 +48,10 @@ function App() {
           <option value={2}>2</option>
           <option value={3}>3</option>
         </select>
-        <button type='submit'>Crear titulos</button>
+        <button type='submit' disabled={loading}>Crear titulos</button>
       </form>
-
       {loading && 'Cargando...'}
+      {jobId && <code>jobId: {jobId}</code>}
       
     </>
   )
